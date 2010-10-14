@@ -19,10 +19,10 @@ Todos.main = function main() {
   // create multiple pages and panes.  
   Todos.getPath('mainPage.mainPane').append() ;
 
-	var query = SC.Query.local(Todos.Task, { orderBy: 'isDone, description'});
+	//var query = SC.Query.local(Todos.Task, { orderBy: 'isDone, description'});
+	var query = Todos.TASKS_QUERY;
 	var tasks = Todos.store.find(query);
 	Todos.tasksController.set('content', tasks);
-
 } ;
 
 function main() { Todos.main(); }
