@@ -83,12 +83,24 @@ Todos.TaskDataSource = SC.DataSource.extend(
     
 	if (SC.kindOf(store.recordTypeFor(storeKey), Todos.Task)) {
 		var id = store.idFor(storeKey);
-		throw "Not Implemented Yet";
+		SC.Request.getUrl(this.getServerPath(id))
+		          .header('Accept', 'application/json').json()
+		      .notify(this, 'didRetrieveTask', store, storeKey)
+		      .send();
+
 		return YES;
 	}
     
     return NO ; // return YES if you handled the storeKey
   },
+
+  didRetrieveTask: function(response, store, storeKey) {
+    if (SC.ok(response)) {
+      var dataHash = response.get('body').content;
+      store.dataSourceDidComplete(storeKey, dataHash);
+
+    } else store.dataSourceDidError(storeKey, response);
+  }, 
 
   /**
   Process response from CouchDB of create, update, delete operations.
