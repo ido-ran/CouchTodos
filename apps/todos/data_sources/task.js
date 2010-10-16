@@ -17,15 +17,24 @@ Todos.TASKS_QUERY = SC.Query.local(Todos.Task, {
 Todos.TaskDataSource = SC.DataSource.extend(
 /** @scope Todos.TaskDataSource.prototype */ {
 
-/**
-Store the document revisions of CouchDB.
-*/
+    /** @private
+    This dictionary contains the _rev of each document key by its _id.
+	In CouchDB we have to include the _rev in each update or delete
+	for CouchDB control.
+	
+	@property {Hash}
+    */
 	_docsRev: null,
 	
 	_dbpath: 'todos',
 
+	init: function() {
+		sc_super();
+		this._docsRev = SC.CoreSet.create();
+	},
+
 	 getServerPath: function(resourceName) {
-	   var path = '/' + this._dbpath + "/" + resourceName;
+	   var path = '/' + this._dbpath + "//" + resourceName;
 	   return path;
 	 },
 	
@@ -39,10 +48,6 @@ Store the document revisions of CouchDB.
   // 
 
   fetch: function(store, query) {
-	
-	if (this._docsRev == null) {
-		this._docsRev = {};
-	}
 	
 	if (query === Todos.TASKS_QUERY) {
 		SC.Request.getUrl(this.getServerView('allTasks')).json()
@@ -79,27 +84,50 @@ Store the document revisions of CouchDB.
 	if (SC.kindOf(store.recordTypeFor(storeKey), Todos.Task)) {
 		var id = store.idFor(storeKey);
 		throw "Not Implemented Yet";
-		/*$.ajax({
-			dataType: "jsonp",
-			url: "http://localhost:5984/todos/_design/app/_view/allTasks?key=%@callback=?".fmt(id),
-			success: function(data, status, xmlhttp) {
-				var rec = data.rows.getEach('value')[0];
-				console.log(recs);
-				store.dataSourceDidComplete(storeKey, rec);
-			},
-			error: function(xmlhttp, textStatus, errorThrown) {
-				console.log("error");
-				store.dataSourceDidErrorQuery(query, textStatus);
-			},
-			complete: function(xmlhttp, textStatus) {
-				console.log("all done");
-			}
-		});*/
-		
 		return YES;
 	}
     
     return NO ; // return YES if you handled the storeKey
+  },
+
+  /**
+  Process response from CouchDB of create, update, delete operations.
+
+  @returns id,rev for success, null for failure.
+  */
+  processResponse: function(response) {
+	 if (SC.ok(response)) {
+		var body = response.get('encodedBody'); 
+		var couchResponse = SC.json.decode(body);
+		var ok = couchResponse.ok;
+		if (ok != YES) return {"error":true, "response":couchResponse};
+
+		var id = couchResponse.id;
+		var rev = couchResponse.rev;
+        this._docsRev[id] = rev;
+		return {"ok":true, "id": id, "rev": rev};
+     } else {
+    	return {"error":true, "response":response};
+	 }
+  },
+
+  /**
+  Get the latest revision of the document.
+  For docs which were fetch from the server we use _rev field,
+  and for docs that were modified we use the local _docsRev dictionary.
+  */
+  getDocRev: function(doc) {
+	var rev = this._docsRev[doc._id];
+	if (rev != null) return rev;
+    else return doc._rev;
+  },
+
+  /**
+  Add _rev field to a document (dataHash) according to the latest known revision.
+  */
+  mergeRevToDoc: function(doc) {
+	var rev = this.getDocRev(doc);
+	doc["_rev"] = rev;
   },
   
   createRecord: function(store, storeKey) {
@@ -117,13 +145,11 @@ Store the document revisions of CouchDB.
   },
   
   didCreateTask: function(response, store, storeKey) {
-     if (SC.ok(response)) {
-		var body = response.get('encodedBody'); 
-		var couchResponse = SC.json.decode(body);
-		var id = couchResponse.id;
-		var rev = couchResponse.rev;
-        store.dataSourceDidComplete(storeKey, null, id); // update id to url
-		this._docsRev[id] = rev;
+	 var couchRes = this.processResponse(response);
+     if (couchRes.ok) {
+		var localDoc = store.readDataHash(storeKey);
+		localDoc._id = couchRes.id;
+        store.dataSourceDidComplete(storeKey, localDoc, couchRes.id); // update id to url
      } else {
         store.dataSourceDidError(storeKey, response);
      }
@@ -134,21 +160,19 @@ Store the document revisions of CouchDB.
   if (SC.kindOf(store.recordTypeFor(storeKey), Todos.Task)) {
 	var id = store.idFor(storeKey);
     var dataHash = store.readDataHash(storeKey);
-	dataHash["_rev"] = this._docsRev[id];	
-	console.log(dataHash);
-     SC.Request.putUrl(this.getServerPath('/')+'/'+id).json()
-               .header('Accept', 'application/json')
-               .notify(this, this.didUpdateTask, store, storeKey)
-               .send(dataHash);
+	this.mergeRevToDoc(dataHash);
+    SC.Request.putUrl(this.getServerPath(id)).json()
+              .header('Accept', 'application/json')
+              .notify(this, this.didUpdateTask, store, storeKey)
+              .send(dataHash);
      return YES;
    }
    return NO;
  },
+
  didUpdateTask: function(response, store, storeKey) {
-   if (SC.ok(response)) {
-     var data = response.get('body');
-     if (data)
-       data = data.content; // if hash is returned; use it.
+   var couchRes = this.processResponse(response);
+   if (couchRes.ok) {
      store.dataSourceDidComplete(storeKey, null) ;
    } else {
      store.dataSourceDidError(storeKey);
@@ -157,9 +181,29 @@ Store the document revisions of CouchDB.
   
   destroyRecord: function(store, storeKey) {
     
-	console.log('destroy was here');
+    if (SC.kindOf(store.recordTypeFor(storeKey), Todos.Task)) {
+	  var id = store.idFor(storeKey);
+	  //var rev = this._docsRev[id];	
+	  var dataHash = store.readDataHash(storeKey);
+	  var rev = this.getDocRev(dataHash);
+      SC.Request.deleteUrl(this.getServerPath(id + "?rev=" + rev)).json()
+                .header('Accept', 'application/json')
+                .notify(this, this.didDeleteTask, store, storeKey)
+                .send();
+       return YES;
+     }	
     
-    return NO ; // return YES if you handled the storeKey
+     return NO ; // return YES if you handled the storeKey
+  },
+
+  didDeleteTask: function(response, store, storeKey) {
+	var couchRes = this.processResponse(response);  
+	if (couchRes.ok) {
+	    store.dataSourceDidDestroy(storeKey);
+		this._docsRev.remove(couchRes.id);
+	  } else {
+		store.dataSourceDidError(response);	
+	  }
   }
   
 }) ;
