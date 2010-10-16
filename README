@@ -1,7 +1,7 @@
 =============================================================================
 Project:   Todos
-Copyright: ©2010 My Company, Inc.
+Copyright: ©2010 Ido Ran (ido.ran@gmail.com)
 =============================================================================
 
-TODO: Describe Your Project
-
+SproutCore Todos sample application [https://sproutcore.pbworks.com/Todos%C2%A0Intro] implemented with CouchDB backend.
+The special peace of this project is the DataSource which know to work with CouchDB documents.
