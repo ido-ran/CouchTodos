@@ -17,21 +17,7 @@ Todos.TASKS_QUERY = SC.Query.local(Todos.Task, {
 Todos.TaskDataSource = SC.DataSource.extend(
 /** @scope Todos.TaskDataSource.prototype */ {
 
-    /** @private
-    This dictionary contains the _rev of each document key by its _id.
-	In CouchDB we have to include the _rev in each update or delete
-	for CouchDB control.
-	
-	@property {Hash}
-    */
-	_docsRev: null,
-	
 	_dbpath: 'todos',
-
-	init: function() {
-		sc_super();
-		this._docsRev = SC.CoreSet.create();
-	},
 
 	 getServerPath: function(resourceName) {
 	   var path = '/' + this._dbpath + "//" + resourceName;
@@ -116,7 +102,6 @@ Todos.TaskDataSource = SC.DataSource.extend(
 
 		var id = couchResponse.id;
 		var rev = couchResponse.rev;
-        this._docsRev[id] = rev;
 		return {"ok":true, "id": id, "rev": rev};
      } else {
     	return {"error":true, "response":response};
@@ -129,17 +114,7 @@ Todos.TaskDataSource = SC.DataSource.extend(
   and for docs that were modified we use the local _docsRev dictionary.
   */
   getDocRev: function(doc) {
-	var rev = this._docsRev[doc._id];
-	if (rev != null) return rev;
-    else return doc._rev;
-  },
-
-  /**
-  Add _rev field to a document (dataHash) according to the latest known revision.
-  */
-  mergeRevToDoc: function(doc) {
-	var rev = this.getDocRev(doc);
-	doc["_rev"] = rev;
+	return doc._rev;
   },
   
   createRecord: function(store, storeKey) {
@@ -159,9 +134,11 @@ Todos.TaskDataSource = SC.DataSource.extend(
   didCreateTask: function(response, store, storeKey) {
 	 var couchRes = this.processResponse(response);
      if (couchRes.ok) {
+		// Add _id and _rev to the local document for further server interaction.
 		var localDoc = store.readDataHash(storeKey);
 		localDoc._id = couchRes.id;
-        store.dataSourceDidComplete(storeKey, localDoc, couchRes.id); // update id to url
+		localDoc._rev = couchRes.rev;
+        store.dataSourceDidComplete(storeKey, localDoc, couchRes.id);
      } else {
         store.dataSourceDidError(storeKey, response);
      }
@@ -172,7 +149,6 @@ Todos.TaskDataSource = SC.DataSource.extend(
   if (SC.kindOf(store.recordTypeFor(storeKey), Todos.Task)) {
 	var id = store.idFor(storeKey);
     var dataHash = store.readDataHash(storeKey);
-	this.mergeRevToDoc(dataHash);
     SC.Request.putUrl(this.getServerPath(id)).json()
               .header('Accept', 'application/json')
               .notify(this, this.didUpdateTask, store, storeKey)
@@ -185,7 +161,10 @@ Todos.TaskDataSource = SC.DataSource.extend(
  didUpdateTask: function(response, store, storeKey) {
    var couchRes = this.processResponse(response);
    if (couchRes.ok) {
-     store.dataSourceDidComplete(storeKey, null) ;
+	 // Update the local _rev of this document.
+	 var localDoc = store.readDataHash(storeKey);
+	 localDoc._rev = couchRes.rev;
+     store.dataSourceDidComplete(storeKey, localDoc) ;
    } else {
      store.dataSourceDidError(storeKey);
    }
@@ -212,7 +191,6 @@ Todos.TaskDataSource = SC.DataSource.extend(
 	var couchRes = this.processResponse(response);  
 	if (couchRes.ok) {
 	    store.dataSourceDidDestroy(storeKey);
-		this._docsRev.remove(couchRes.id);
 	  } else {
 		store.dataSourceDidError(response);	
 	  }
