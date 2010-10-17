@@ -1,5 +1,5 @@
 // ==========================================================================
-// Project:   Todos.tasksController
+// Project:   Todos.tasksArrayController
 // Copyright: ©2010 My Company, Inc.
 // ==========================================================================
 /*globals Todos */
@@ -10,10 +10,10 @@
 
   @extends SC.ArrayController
 */
-Todos.tasksController = SC.ArrayController.create(
+Todos.tasksArrayController = SC.ArrayController.create(
   SC.CollectionViewDelegate,
 
-/** @scope Todos.tasksController.prototype */ {
+/** @scope Todos.tasksArrayController.prototype */ {
 
 	summary: function() {
 		var len = this.get('length'), ret;
@@ -54,7 +54,7 @@ Todos.tasksController = SC.ArrayController.create(
 	    // activate inline editor once UI can repaint
 	    this.invokeLater(function() {
 	      var contentIndex = this.indexOf(task);
-	      var list = Todos.mainPage.getPath('mainPane.middleView.contentView');
+	      var list = Todos.mainPage.getPath('mainPane.middleView.topLeftView.contentView');
 	      var listItem = list.itemViewForContentIndex(contentIndex);
 	      listItem.beginEditing();
 	    });

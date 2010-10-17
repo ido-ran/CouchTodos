@@ -16,6 +16,7 @@ Todos.Task = SC.Record.extend(
 
 	primaryKey: "_id",
 	isDone: SC.Record.attr(Boolean),
-	description: SC.Record.attr(String)
+	description: SC.Record.attr(String),
+	projectCode: SC.Record.attr(String)
 
 }) ;

@@ -21,7 +21,7 @@ Todos = SC.Application.create(
   // connect to a backend server.  The default setup below connects the store
   // to any fixtures you define.
   store: SC.Store.create({
-	commitRecordsAutomatically: YES
+	commitRecordsAutomatically: NO
   }).from("Todos.TaskDataSource")
   
   // TODO: Add global constants or singleton objects needed by your app here.
