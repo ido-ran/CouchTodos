@@ -7,10 +7,43 @@
 // This page describes the main user interface for your application.  
 Todos.mainPage = SC.Page.design({
 
+	taskList: SC.ScrollView.design({
+        hasHorizontalScroller: NO,
+        layout: { top: 36, bottom: 32, left: 0, right: 0 },
+        backgroundColor: 'white',
+        //Here is the original list view, which is bound to the tasksArrayController
+        contentView: SC.ListView.design({
+          contentBinding: 'Todos.tasksArrayController.arrangedObjects',
+          selectionBinding: 'Todos.tasksArrayController.selection',
+          contentValueKey: "description",
+          contentCheckboxKey: "isDone",
+          rowHeight: 21,
+          canEditContent: YES,
+          canDeleteContent: YES,
+
+          target: "Todos.tasksArrayController",
+          action: "toggleDone"
+        })
+      }),
+
+	projectTreeView: SC.ListView.design({
+	    layout: {
+	        top: 5,
+	        width: 300,
+	        bottom: 5,
+	        left: 5
+	    },
+	    contentValueKey: "name",
+	    contentBinding: "Todos.projectsTreeController.arrangedObjects",
+	    selectionBinding : "Todos.projectsTreeController.selection"
+	  }),   
+
+
   // The main pane is made visible on screen as soon as your app is loaded.
   // Add childViews to this pane for views to display immediately on page 
   // load.
   mainPane: SC.MainPane.design({
+		
 	childViews: 'middleView topView bottomView'.w(),
 
 	    topView: SC.ToolbarView.design({
@@ -40,24 +73,18 @@ Todos.mainPage = SC.Page.design({
 	        autoresizeBehavior: SC.RESIZE_TOP_LEFT,
 	        defaultThickness: 0.8,
 	        //The list view is nested into the scrollview which is now in the splitview.
-	        topLeftView: SC.ScrollView.design({
-	          hasHorizontalScroller: NO,
-	          layout: { top: 36, bottom: 32, left: 0, right: 0 },
-	          backgroundColor: 'white',
-	          //Here is the original list view, which is bound to the tasksArrayController
-	          contentView: SC.ListView.design({
-	            contentBinding: 'Todos.tasksArrayController.arrangedObjects',
-	            selectionBinding: 'Todos.tasksArrayController.selection',
-	            contentValueKey: "description",
-	            contentCheckboxKey: "isDone",
-	            rowHeight: 21,
-	            canEditContent: YES,
-	            canDeleteContent: YES,
-
-	            target: "Todos.tasksArrayController",
-	            action: "toggleDone"
-	          })
-	        }),
+	        topLeftView: SC.TabView.design({
+				layout: { left: 15, right: 15, top: 15, botoom: 15},
+				nowShowing: 'Todos.mainPage.taskList',
+				itemTitleKey: 'title',
+				itemValueKey: 'value',
+				items: [
+					{ title: 'Task List',
+					  value: 'Todos.mainPage.taskList'},
+					{ title: 'Projects',
+					  value: 'Todos.mainPage.projectTreeView'},
+				]
+			}),
 	        topLeftMinThickness: 150,
 	        topLeftMaxThickness: 250,
 	        dividerView: SC.SplitDividerView.design({
@@ -66,7 +93,7 @@ Todos.mainPage = SC.Page.design({
 	        //This view shows up on the right. It is a placeholder, later we will use a formview.
 	        bottomRightView: SC.View.design({
 	          classNames: "todolabel".w(),
-	          childViews: "prompt okButton descriptionLabel descriptionText isDoneCheckbox projectCodeLabel projectCodeText projectCodeMessage".w(),
+	          childViews: "prompt okButton descriptionLabel descriptionText isDoneCheckbox projectCodeLabel projectCodeText projectCodeMessage projectInfo".w(),
 
 	          // PROMPT
 	          prompt: SC.LabelView.design({
@@ -115,6 +142,13 @@ Todos.mainPage = SC.Page.design({
 			     textAlign: SC.ALIGN_CENTER,
 			     backgroundColor: "red",
 			     valueBinding: "Todos.taskController.projectCodeMessage" 
+			  }),
+			
+			  projectInfo: SC.LabelView.design({
+				 layout: { top: 190, left: 20, width: 400, height: 18 },
+				 textAlign: SC.ALIGN_CENTER,
+				 backgroundColor: "blue",
+				 valueBinding: "Todos.treeNodeController.projectName"
 			  }),
 
 

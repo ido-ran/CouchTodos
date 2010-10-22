@@ -8,6 +8,10 @@ Todos.TASKS_QUERY = SC.Query.local(Todos.Task, {
 	orderBy: 'isDone,description'
 });
 
+Todos.PROJECTS_QUERY = SC.Query.local(Todos.Project, {
+	orderBy: 'name'
+});
+
 /** @class
 
   (Document Your Data Source Here)
@@ -34,11 +38,18 @@ Todos.TaskDataSource = SC.DataSource.extend(
   // 
 
   fetch: function(store, query) {
-	
 	if (query === Todos.TASKS_QUERY) {
 		SC.Request.getUrl(this.getServerView('allTasks')).json()
 		          .header('Accept', 'application/json')
 		          .notify(this, 'didFetchTasks', store, query)
+		          .send();
+		
+		return YES;
+	}
+	else if (query === Todos.PROJECTS_QUERY) {
+		SC.Request.getUrl(this.getServerView('allProjects')).json()
+		          .header('Accept', 'application/json')
+		          .notify(this, 'didFetchProjects', store, query)
 		          .send();
 		
 		return YES;
@@ -60,13 +71,26 @@ Todos.TaskDataSource = SC.DataSource.extend(
       }
     },  
 
+  didFetchProjects: function(response, store, query) {
+      if(SC.ok(response)) {
+		var body = response.get('encodedBody');
+		var couchResponse = SC.json.decode(body);
+		var records = couchResponse.rows.getEach('value');
+
+         store.loadRecords(Todos.Project, records);
+         store.dataSourceDidFetchQuery(query);
+      } else {
+         store.dataSourceDidErrorQuery(query, response);
+      }
+    },  
+
 
   // ..........................................................
   // RECORD SUPPORT
   // 
   
   retrieveRecord: function(store, storeKey) {
-    
+    throw "not support single record";
 	if (SC.kindOf(store.recordTypeFor(storeKey), Todos.Task)) {
 		var id = store.idFor(storeKey);
 		SC.Request.getUrl(this.getServerPath(id))

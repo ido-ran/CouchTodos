@@ -1,5 +1,5 @@
 // ==========================================================================
-// Project:   Todos.Task
+// Project:   Todos.Project
 // Copyright: ©2010 My Company, Inc.
 // ==========================================================================
 /*globals Todos */
@@ -11,31 +11,27 @@
   @extends SC.Record
   @version 0.1
 */
-Todos.Task = SC.Record.extend(
-/** @scope Todos.Task.prototype */ {
+Todos.Project = SC.Record.extend(
+/** @scope Todos.Project.prototype */ {
 
 	primaryKey: "_id",
 
-	isDone: SC.Record.attr(Boolean),
+	name: SC.Record.attr(String),
 	description: SC.Record.attr(String),
-	projectCode: SC.Record.attr(String),
-
-	project: SC.Record.toOne("Todos.Project", {
-		inverse: "tasks", isMaster: NO
+	
+	tasks: SC.Record.toMany("Todos.Task", {
+		inverse: "project", isMaster: YES
 	}),
 	
-	 isTask: function(){return YES;},
+	isProject: function(){return YES;},
+	
 
 	// TreeView related properties.
 	// In better world it will be a mixin or someone else, not in the model.
 	treeItemIsExpanded: NO,
 
-	 treeItemChildren: function(){
-	    return null;
-	 }.property('guid').cacheable(),
-
-	 name: function(){
-	    return this.get("description");
-	 }.property('description').cacheable(),
+	treeItemChildren: function(){
+	   return this.get("tasks");
+	}.property(),
 
 }) ;

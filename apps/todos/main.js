@@ -23,6 +23,8 @@ Todos.main = function main() {
 	var query = Todos.TASKS_QUERY;
 	var tasks = Todos.store.find(query);
 	Todos.tasksArrayController.set('content', tasks);
+	
+	Todos.projectsTreeController.populate();
 } ;
 
 function main() { Todos.main(); }
