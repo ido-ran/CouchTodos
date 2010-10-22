@@ -27,9 +27,9 @@ function() {
 	    var projectCodeText = function() {
 	        return loadForm().get("projectCodeText");
 	    } 
-	
-	
-	return { //returns object literal
+
+	// public part
+	return {
 
 	contentBinding: SC.Binding.single('Todos.tasksArrayController.selection'),
 
@@ -58,38 +58,39 @@ function() {
 	}.observes("*content.status"),
 	
 	clearValidationMessages: function() {
-	        this.set("projectCodeMessage", "");
-	        this.set("isProjectCodeMessageOn", NO);                     
-	    },
+	    this.set("projectCodeMessage", "");
+	    this.set("isProjectCodeMessageOn", NO);                     
+	},
 
-		validateProjectCodeField: function() {
-		        var taskRecord = this.get("content");
-		        if (!taskRecord || !taskRecord.isRecord) {
-		            return YES;
-		        }
-		        var projectCode = taskRecord.get("projectCode");
-		        if (projectCode) {
-		            //check to see if the project code matches our regex rule
-		            if (!projectCode.match(REGEX_MATCH_PROJECT_CODE)) {
-		                this.set("projectCodeMessage", "invalid project code: must be 3 letters dash 3 letters");
-		                this.set("isProjectCodeMessageOn", YES);
-		                return NO;              
-		            } else {
-		                this.clearValidationMessages();
-		                return YES;
-		            }
-		        }else {
-		               return YES;
-		        }      
-		    },
+	validateProjectCodeField: function() {
+	     var taskRecord = this.get("content");
+	     if (!taskRecord || !taskRecord.isRecord) {
+	          return YES;
+	     }
+	     var projectCode = taskRecord.get("projectCode");
+	     if (projectCode) {
+	        //check to see if the project code matches our regex rule
+	        if (!projectCode.match(REGEX_MATCH_PROJECT_CODE)) {
+	            this.set("projectCodeMessage", "invalid project code: must be 3 letters dash 3 letters");
+	            this.set("isProjectCodeMessageOn", YES);
+	            return NO;              
+	       } else {
+	            this.clearValidationMessages();
+	            return YES;
+	       }
+	    } else {
+          return YES;
+        }      
+   },
 
-		    observeProjectCodeKeyResponder: function() {
-		        var component = projectCodeText();
-		        //We just left the project code field, let's validate
-		        if (component.get("isKeyResponder")==NO) {
-		            this.validateProjectCodeField();
-		        }
-		    }.observes(PATH_TO_FORM + ".projectCodeText.isKeyResponder"),
+   observeProjectCodeKeyResponder: function() {
+       var component = projectCodeText();
+       //We just left the project code field, let's validate
+       if (component.get("isKeyResponder")==NO) {
+           this.validateProjectCodeField();
+       }
+    }.observes(PATH_TO_FORM + ".projectCodeText.isKeyResponder"),
 
-	}}()
+	} // End of public part
+  }() // Activate object literal.
 ) ;
