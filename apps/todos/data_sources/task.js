@@ -4,6 +4,9 @@
 // ==========================================================================
 /*globals Todos */
 
+sc_require('models/task');
+sc_require('models/project');
+
 Todos.TASKS_QUERY = SC.Query.local(Todos.Task, {
 	orderBy: 'isDone,description'
 });
